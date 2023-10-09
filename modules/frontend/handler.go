@@ -3,6 +3,7 @@ package frontend
 import (
 	"context"
 	"errors"
+	"github.com/grafana/tempo/pkg/util"
 	"io"
 	"net/http"
 	"strconv"
@@ -15,7 +16,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/weaveworks/common/httpgrpc"
 	"github.com/weaveworks/common/httpgrpc/server"
-	"github.com/weaveworks/common/tracing"
 	"github.com/weaveworks/common/user"
 )
 
@@ -58,12 +58,14 @@ func (f *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	start := time.Now()
 	orgID, _ := user.ExtractOrgID(ctx)
-	traceID, _ := tracing.ExtractTraceID(ctx)
+	traceID, _ := util.ExtractTraceID(ctx)
 
 	var statusCode int
 	defer func(status int) {
 		f.queriesPerTenant.WithLabelValues(orgID, strconv.Itoa(status)).Inc()
 	}(statusCode)
+
+	//fmt.Println("Inside ServeHTTP for request: ", r)
 
 	// add orgid to existing spans
 	span := opentracing.SpanFromContext(r.Context())

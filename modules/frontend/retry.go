@@ -55,6 +55,12 @@ func (r retryWare) RoundTrip(req *http.Request) (*http.Response, error) {
 
 		resp, err := r.next.RoundTrip(req)
 
+		span.LogFields(
+			ot_log.String("msg", "Retry roundtrip"),
+			ot_log.String("response", resp.Status),
+			ot_log.String("request", req.URL.String()),
+		)
+
 		// do not retry if no error and response is not HTTP 5xx
 		if err == nil && !shouldRetry(resp.StatusCode) {
 			return resp, nil

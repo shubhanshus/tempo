@@ -2,13 +2,16 @@ package util
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/weaveworks/common/tracing"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // ExtractTraceID extracts the trace id, if any from the context.
 func ExtractTraceID(ctx context.Context) (string, bool) {
+
+	fmt.Printf("Inside ExtractTraceID for context %v\n", ctx)
+
 	// Extract from OpenTracing Jaeger exporter
 	traceID, ok := tracing.ExtractTraceID(ctx)
 	if ok {
