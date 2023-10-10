@@ -2,10 +2,12 @@ package tempodb
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"time"
 
 	"github.com/grafana/tempo/tempodb/backend"
+	"github.com/sirupsen/logrus"
 )
 
 // CompactionBlockSelector is an interface for different algorithms to pick suitable blocks for compaction
@@ -18,6 +20,13 @@ const (
 	defaultMinInputBlocks = 2
 	defaultMaxInputBlocks = 4
 )
+
+var logger = logrus.New()
+
+func init() {
+	// Set the output to stdout
+	logger.Out = os.Stdout
+}
 
 /*************************** Time Window Block Selector **************************/
 
@@ -57,15 +66,18 @@ func newTimeWindowBlockSelector(blocklist []*backend.BlockMeta, maxCompactionRan
 	now := time.Now()
 	currWindow := twbs.windowForTime(now)
 	activeWindow := twbs.windowForTime(now.Add(-activeWindowDuration))
+	logger.Info("The current window is ", currWindow, " and the current time is ", now, " and the active window is ", activeWindow)
 
 	for _, b := range blocklist {
 		w := twbs.windowForBlock(b)
+		logger.Info("Block ", b, " is in window ", w)
 
 		// exclude blocks that fall in last window from active -> inactive cut-over
 		// blocks in this window will not be compacted in order to avoid
 		// ownership conflicts where two compactors process the same block
 		// at the same time as it transitions from last active window to first inactive window.
 		if w == activeWindow {
+			logger.Info("Excluding block ", b, " from active window ", activeWindow)
 			continue
 		}
 
@@ -75,6 +87,8 @@ func newTimeWindowBlockSelector(blocklist []*backend.BlockMeta, maxCompactionRan
 
 		age := currWindow - w
 		if activeWindow <= w {
+			logger.Info("Block ", b, " is in active window ", activeWindow, " and is ", age, " windows old")
+
 			// inside active window.
 			// Group by compaction level and window.
 			// Choose lowest compaction level and most recent windows first.
@@ -87,6 +101,7 @@ func newTimeWindowBlockSelector(blocklist []*backend.BlockMeta, maxCompactionRan
 
 			entry.hash = fmt.Sprintf("%v-%v-%v", b.TenantID, b.CompactionLevel, w)
 		} else {
+			logger.Info("Block ", b, " is in inactive window ", activeWindow, " and is ", age, " windows old")
 			// outside active window.
 			// Group by window only.  Choose most recent windows first.
 			entry.group = fmt.Sprintf("B-%016X", age)
