@@ -4,10 +4,12 @@ VERSION=$(shell ./tools/image-tag | cut -d, -f 1)
 GIT_REVISION := $(shell git rev-parse --short HEAD)
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 
-GOOS ?= $(shell go env GOOS)
+#GOOS ?= $(shell go env GOOS)
+GOOS :=linux
 GOARCH ?= $(shell go env GOARCH)
 
-GOPATH := $(shell go env GOPATH)
+GOARCH := amd64
+#GOPATH := $(shell go env GOPATH)
 GORELEASER := $(GOPATH)/bin/goreleaser
 
 # Build Images
@@ -160,12 +162,12 @@ lint:
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component exe
-	docker build -t grafana/$(COMPONENT) --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile .
+	docker build -t grafana/$(COMPONENT) --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile --platform linux/amd64 .
 	docker tag grafana/$(COMPONENT) $(COMPONENT)
 
 .PHONY: docker-component-debug
 docker-component-debug: check-component exe-debug
-	docker build -t grafana/$(COMPONENT)-debug --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile_debug .
+	docker build -t grafana/$(COMPONENT)-debug --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile_debug 	docker build -t grafana/$(COMPONENT)-debug --build-arg=TARGETARCH=$(GOARCH) -f ./cmd/$(COMPONENT)/Dockerfile_debug --platform linux/amd64 .
 	docker tag grafana/$(COMPONENT)-debug $(COMPONENT)-debug
 
 .PHONY: docker-tempo
